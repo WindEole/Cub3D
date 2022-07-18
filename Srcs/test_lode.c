@@ -1,7 +1,7 @@
 #include "cub3d.h"
 #include "X11/X.h"
 
-# define W_WIDTH 1010//512
+# define W_WIDTH 512
 # define W_HEIGHT 512
 
 # define GREEN_PIXEL 0xFF00
@@ -39,6 +39,17 @@ typedef struct s_rays
 	float	yo;
 }	t_rays;
 
+typedef struct s_line
+{
+	// int xA;
+	// int yA;
+	// int xB;
+	// int yB;
+	double a;
+	double b;
+	int color;
+}	t_line;
+
 typedef struct s_play
 {
 	int		px;
@@ -46,17 +57,10 @@ typedef struct s_play
 	double	pdx; // delta x et delta y pour la rotation du player
 	double	pdy;
 	double	pa; // angle of the player (N/S/E/W ?)
-	float	dist_H;
-	float	dhx;
-	float	dhy;
-	float	dist_V;
-	float	dvx;
-	float	dvy;
-	float	dist_final;
 	int		width; // A retirer plus tard
 	int		height; // A retirer plus tard
 	int		color;
-//	t_line	line;
+	t_line	line;
 	t_rays	ray;
 }	t_play;
 
@@ -90,6 +94,12 @@ int	mapext[] =
 1,0,0,0,0,0,0,1,
 1,1,1,1,1,1,1,1,
 };
+
+
+
+//	render_line(&data->img, (t_line){10, 10, 55, 100, (10-100)/(10-55), (100*(10-55)-55*(10-100))/(10-55), RED_PIXEL});
+
+
 
 // typedef struct s_rect
 // {
@@ -182,7 +192,6 @@ void	my_pixel_put(t_img *img, int x, int y, int color)
 	if (x > W_WIDTH || y > W_HEIGHT)
 	{
 		printf("Ça a envoyé de la merde !\n");
-		printf(CYAN"x = %d | y = %d"RESET"\n", x, y);
 		return;
 	}
 
@@ -196,29 +205,6 @@ void	my_pixel_put(t_img *img, int x, int y, int color)
 		else
 			*pixel++ = (color >> (img->bpp - 8 - i)) & 0xFF;
 		i -= 8;
-	}
-}
-
-void	render_background(t_img *img, int c, int f)
-{
-	int	i;
-	int	j;
-
-	i = 0;
-	while (i < 320 / 2)
-	{
-		j = 530;
-		while (j < W_WIDTH)
-			my_pixel_put(img, j++, i, c);
-		++i;
-	}
-	i = 320 / 2;
-	while (i < 320)
-	{
-		j = 530;
-		while (j < W_WIDTH)
-			my_pixel_put(img, j++, i, f);
-		++i;
 	}
 }
 
@@ -267,115 +253,55 @@ void	render_background(t_img *img, int c, int f)
 // 	return (0);
 // }
 
-void	draw_3D(t_play *play, t_map *map, t_img *img, int r)
+	// i = play.py + play.pdy * 5; // On affiche sa direction !
+	// while (i < play.py + play.pdy * 5 + play.height)
+	// {
+	// 	j = play.px + play.pdx * 5;
+	// 	while (j < play.px + play.pdx * 5 + play.width)
+	// 		my_pixel_put(img, j++, i, GREEN_PIXEL);
+	// 	++i;
+	// }
+
+void	drawRays(t_play *play, t_map *map, t_rays *ray)
 {
-	int		i;
-	int		j;
-	float	line_origin;
-	float	fish_eye;
-	float	lineH;
-
-	fish_eye = play->pa - play->ray.ra;
-	if (fish_eye < 0)
-		fish_eye += 2 * M_PI;
-	if (fish_eye > 2 * M_PI)
-		fish_eye -= 2 * M_PI;
-	play->dist_final = play->dist_final * cos(fish_eye);
-	lineH = map->mapS * 320 / play->dist_final; // line height !
-	if (lineH > 320)
-		lineH = 320;
-	line_origin = 160 - lineH / 2;
-	i = line_origin;
-	while (i < lineH + line_origin)
-	{
-		j = r * 8 + 530;
-		while (j < (r * 8 + 530) + 8)
-			my_pixel_put(img, j++, i, BLUE_PIXEL);
-		++i;
-	}
-}
-
-// int draw_line(t_img *img, float line, int r)
-// {
-// 	int		i;
-// 	int		j;
-// 	float	line_origin;
-
-// //	play.line.a = ((play.py - play.pdy)/(play.px - play.pdx));
-// //	play.line.b = line;
-// //printf(GREEN"px = [%d] | py = [%d] | pdx = [%f] | pdy = [%f]"RESET"\n", play.px, play.py, play.pdx, play.pdy);	
-// //printf(RED"a = [%f] | b = [%f]"RESET"\n", play.line.a, play.line.b);
-// 	line_origin = 160 - line / 2;
-// 	i = line_origin;
-// 	while (i < line + line_origin)
-// 	{
-// 		j = r * 8 + 530;
-// 		while (j < (r * 8 + 530) + 8)
-// 		{
-// //		printf(BLUE"ici ?"RESET"\n");
-// //			if (i == play.line.a * j + play.line.b)
-// //			if (i == line)
-// 			my_pixel_put(img, j++, i, GREEN_PIXEL);
-// //			j++;			
-// 		}
-// 		++i;
-// 	}
-// 	return (0);
-// }
-
-float	calcul_dist(float px, float py, float rx, float ry)
-{
-	return (sqrt((rx - px) * (rx - px) + (ry - py) * (ry - py)));
-}
-
-void	drawRays(t_play *play, t_map *map, t_rays *ray, t_img *img)
-{
-	int		r; // r = nb de rayons lancés par le player !
+	int		r;
 	int		dof;
 	float	aTan;
 	float	nTan;
 
-//	ray->ra = play->pa; // ra = raised angle
-	ray->ra = play->pa - (M_PI / 180 * 30);
-	if (ray->ra < 0)
-		ray->ra += 2 * M_PI;
-	if (ray->ra > 2 * M_PI)
-		ray->ra -= 2 * M_PI;
-	play->dist_H = 1000000;
-	play->dhx = play->px;
-	play->dhy = play->py;
-	play->dist_V = 1000000;
-	play->dvx = play->px;
-	play->dvy = play->py;
+	ray->ra = play->pa; // ra = raised angle
 	r = 0;
-	while (r < 60) 
+	while (r < 1)
 	{
 //--- Check horizontal lines --- video 9'18//
 		dof = 0;
-		aTan = -1 / tan(ray->ra);
-		if (ray->ra < M_PI) //-- player is looking up 
+		if (ray->ra != M_PI)
+			aTan = -1 / tan(ray->ra);
+		else
+			aTan = -1;
+		if (ray->ra > M_PI) //-- player is looking down
 		{
-//printf(RED"ra = [%f] | player is looking up !"RESET"\n", ray->ra);
-			if (((((int)(play->py) >> 6) << 6) - 0.0001) < W_HEIGHT)
-				ray->ry = (((int)(play->py) >> 6) << 6) - 0.0001;
-			if (((play->py - ray->ry) * aTan + play->px) < W_WIDTH)
-				ray->rx = (play->py - ray->ry) * aTan + play->px;
+printf(RED"ra = [%f] | player is looking up !"RESET"\n", ray->ra);
+//			if (((((int)(play->py) >> 6) << 6) - 0.0001) < W_HEIGHT)
+			ray->ry = (((int)(play->py) >> 6) << 6) - 0.0001;
+//			if (((play->py - ray->ry) * aTan + play->px) < W_WIDTH)
+			ray->rx = (play->py - ray->ry) * aTan + play->px;
 			ray->yo = -64;
 			ray->xo = -ray->yo * aTan;
 		}
-		if (ray->ra > M_PI) //-- player is looking down
+		if (ray->ra < M_PI) //-- player is looking up
 		{
-//printf(GREEN"ra = [%f] | player is looking down!"RESET"\n", ray->ra);
-			if (((((int)(play->py) >> 6) << 6) + 64) < W_HEIGHT)
-				ray->ry = (((int)(play->py) >> 6) << 6) + 64;
-			if (((play->py - ray->ry) * aTan + play->px) < W_WIDTH)
-				ray->rx = (play->py - ray->ry) * aTan + play->px;
+printf(GREEN"ra = [%f] | player is looking down!"RESET"\n", ray->ra);
+//			if (((((int)(play->py) >> 6) << 6) + 64) < W_HEIGHT)
+			ray->ry = (((int)(play->py) >> 6) << 6) + 64;
+//			if (((play->py - ray->ry) * aTan + play->px) < W_WIDTH)
+			ray->rx = (play->py - ray->ry) * aTan + play->px;
 			ray->yo = 64;
 			ray->xo = -ray->yo * aTan;
 		}
 		if (ray->ra == 0 || ray->ra == M_PI) //-- player is looking left or right
 		{
-//printf(YELLOW"ra = [%f] | player is looking left or right !"RESET"\n", ray->ra);
+printf(YELLOW"ra = [%f] | player is looking left or right !"RESET"\n", ray->ra);
 			ray->ry = play->py;
 			ray->rx = play->px;
 			dof = 8;
@@ -386,12 +312,7 @@ void	drawRays(t_play *play, t_map *map, t_rays *ray, t_img *img)
 			ray->my = (int)(ray->ry)>>6;
 			ray->mp = ray->my * map->mapX + ray->mx;
 			if (ray->mp > 0 && ray->mp < map->mapS && mapext[ray->mp] == 1) // ray hit wall !
-			{
-				play->dhx = ray->rx;
-				play->dhy = ray->ry;
-				play->dist_H = calcul_dist(play->px, play->py, play->dhx, play->dhy);
 				dof = 8;
-			}
 			else // make ray go to next wall !
 			{
 				if (ray->rx < W_WIDTH && (ray->rx + ray->xo) < W_WIDTH)
@@ -401,48 +322,34 @@ void	drawRays(t_play *play, t_map *map, t_rays *ray, t_img *img)
 				dof += 1;
 			}
 		}
-// //---dessinons les rayons horizontaux ! ---//
-// 		unsigned int i, j;
-// 		i = play->ray.ry + play->height;//play.ray.ry; // On affiche le point de contact du rayon avec l'horizontale
-// 	printf(YELLOW"i = %d"RESET"\n", i);
-// 		while (i > play->ray.ry && i < W_HEIGHT)// < play.ray.ry + play.height)
-// 		{
-// 			j = play->ray.rx;
-// 	printf(ORANGE"j = %d"RESET"\n", j);
-// 			while (j < play->ray.rx + play->width && j < W_WIDTH)
-// 			{
-// 	printf(BLUE"i = %d | j = %d"RESET"\n", i, j);
-// 				my_pixel_put(img, j++, i, BLUE_PIXEL);
-// 			}
-// 			--i;
-// 		}
 // 		r++;
-// --- Check vertical lines --- video 10'25// P2 = PI/2 | P3 = 3 * PI/2
+//--- Check vertical lines --- video 10'25// P2 = PI/2 | P3 = 3 * PI/2
 		dof = 0;
 		nTan = -tan(ray->ra);
-		if (ray->ra < (M_PI / 2) || ray->ra > (3 * M_PI / 2)) //-- player is looking right
+		if (ray->ra > (M_PI / 2) && ray->ra < (3 * M_PI / 2)) //-- player is looking left
 		{
-//printf(PURPLE"ra = [%f] | player is looking left !"RESET"\n", ray->ra);
-			if (((((int)(play->px) >> 6) << 6) - 0.0001) < W_HEIGHT)
-				ray->rx = (((int)(play->px) >> 6) << 6) - 0.0001;
-			if (((play->px - ray->rx) * nTan + play->py) < W_WIDTH)
-				ray->ry = (play->px - ray->rx) * nTan + play->py;
+printf(RED"ra = [%f] | player is looking left !"RESET"\n", ray->ra);
+//			if (((((int)(play->px) >> 6) << 6) - 0.0001) < W_HEIGHT)
+			ray->rx = (((int)(play->px) >> 6) << 6) - 0.0001;
+//			if (((play->px - ray->rx) * nTan + play->py) < W_WIDTH)
+			ray->ry = (play->px - ray->rx) * nTan + play->py;
 			ray->xo = -64;
 			ray->yo = -ray->xo * nTan;
 		}
-		if (ray->ra > (M_PI / 2) && ray->ra < (3 * M_PI / 2)) //-- player is looking left
+		if (ray->ra < (M_PI / 2) || ray->ra > (3 * M_PI / 2)) //-- player is looking right
 		{
-//printf(CYAN"ra = [%f] | player is looking right!"RESET"\n", ray->ra);
+printf(GREEN"ra = [%f] | player is looking right!"RESET"\n", ray->ra);
 			if (((((int)(play->px) >> 6) << 6) + 64) < W_HEIGHT)
 				ray->rx = (((int)(play->px) >> 6) << 6) + 64;
 			if (((play->px - ray->rx) * nTan + play->py) < W_WIDTH)
 				ray->ry = (play->px - ray->rx) * nTan + play->py;
 			ray->xo = 64;
 			ray->yo = -ray->xo * nTan;
+printf(CYAN"ry = [%f]"RESET"\n", ray->ry);
 		}
 		if (ray->ra == 0 || ray->ra == M_PI) //-- player is looking up or down
 		{
-//printf(ORANGE"ra = [%f] | player is looking up or down !"RESET"\n", ray->ra);
+printf(YELLOW"ra = [%f] | player is looking up or down !"RESET"\n", ray->ra);
 			ray->ry = play->py;
 			ray->rx = play->px;
 			dof = 8;
@@ -452,16 +359,13 @@ void	drawRays(t_play *play, t_map *map, t_rays *ray, t_img *img)
 			ray->mx = (int)(ray->rx)>>6;
 			ray->my = (int)(ray->ry)>>6;
 			ray->mp = ray->my * map->mapX + ray->mx;
-// printf(YELLOW"rx = %f | mx = %d | ry = %f | my = %d"RESET"\n", ray->rx, ray->mx, ray->ry, ray->my);
-// printf(ORANGE"ray->mp = [%d]"RESET"\n", ray->mp);
-// printf(BLUE"dof = [%d]"RESET"\n", dof);
+			// if (ray->mp < 0)
+			// 	ray->mp = -1 * ray->mp;
+printf(YELLOW"rx = %f | mx = %d | ry = %f | my = %d"RESET"\n", ray->rx, ray->mx, ray->ry, ray->my);
+printf(ORANGE"ray->mp = [%d]"RESET"\n", ray->mp);
+printf(BLUE"dof = [%d]"RESET"\n", dof);
 			if (ray->mp > 0 && ray->mp < map->mapS && mapext[ray->mp] == 1) // ray hit wall !
-			{
-				play->dvx = ray->rx;
-				play->dvy = ray->ry;
-				play->dist_V = calcul_dist(play->px, play->py, play->dvx, play->dvy);
 				dof = 8;
-			}
 			else // make ray go to next wall !
 			{
 				if (ray->rx < W_WIDTH && (ray->rx + ray->xo) < W_WIDTH)
@@ -471,34 +375,6 @@ void	drawRays(t_play *play, t_map *map, t_rays *ray, t_img *img)
 				dof += 1;
 			}
 		}
-		if (play->dist_V < play->dist_H)
-		{
-			ray->rx = play->dvx;
-			ray->ry = play->dvy;
-			play->dist_final = play->dist_V;
-		}
-		if (play->dist_H < play->dist_V)
-		{
-			ray->rx = play->dhx;
-			ray->ry = play->dhy;
-			play->dist_final = play->dist_H;
-		}
-	//---dessinons les rayons ---//
-		unsigned int i, j;
-		i = play->ray.ry; // On affiche le point de contact du rayon avec les murs
-		while (i < play->ray.ry + 3 && i < W_HEIGHT)
-		{
-			j = play->ray.rx;
-			while (j < play->ray.rx + 3 && j < W_WIDTH)
-				my_pixel_put(img, j++, i, BLUE_PIXEL);
-			++i;
-		}
-		draw_3D(play, map, img, r);
-		ray->ra += M_PI / 180;
-		if (ray->ra < 0)
-			ray->ra += 2 * M_PI;
-		if (ray->ra > 2 * M_PI)
-			ray->ra -= 2 * M_PI;
 		r++;
 	}
 }
@@ -508,22 +384,33 @@ int render_player(t_img *img, t_play play)
 	int	i;
 	int j;
 
-	i = play.py; // On affiche le player
-	while (i < play.py + play.height)
+	i = play.py + play.height; // On affiche le player
+	while (i > play.py)//< play.py + play.height)
 	{
 		j = play.px;
 		while (j < play.px + play.width)
 			my_pixel_put(img, j++, i, play.color);
-		++i;
+		--i;
 	}
-	// i = play.py + play.pdy * 5; // On affiche sa direction !
-	// while (i < play.py + play.pdy * 5 + play.height)
-	// {
-	// 	j = play.px + play.pdx * 5;
-	// 	while (j < play.px + play.pdx * 5 + play.width)
-	// 		my_pixel_put(img, j++, i, GREEN_PIXEL);
-	// 	++i;
-	// }
+
+	i = play.py + play.pdy * 5 + play.height; //play.py + play.pdy * 5; // On affiche sa direction !
+	while (i > play.py + play.pdy * 5)//< play.py + play.pdy * 5 + play.height)
+	{
+		j = play.px + play.pdx * 5;
+		while (j < play.px + play.pdx * 5 + play.width)
+			my_pixel_put(img, j++, i, GREEN_PIXEL);
+		--i;
+	}
+
+
+	i = play.ray.ry + play.height;//play.ray.ry; // On affiche le point de contact du rayon avec l'horizontale
+	while (i > play.ray.ry)// < play.ray.ry + play.height)
+	{
+		j = play.ray.rx;
+		while (j < play.ray.rx + play.width)
+			my_pixel_put(img, j++, i, BLUE_PIXEL);
+		--i;
+	}
 	return (0);
 }
 
@@ -581,9 +468,9 @@ int	render(t_data *data)
 		return (1);
 	render_map(&data->img, data->map);
 //	render_square(&data->img, data->map);
-	render_background(&data->img, data->img.ceil_color, data->img.floor_color);
+//	render_background(&data->img, data->img.ceil_color, data->img.floor_color);
 	render_player(&data->img, data->play);//(t_play){W_WIDTH - 100, W_HEIGHT - 100, 5, 5, GREEN_PIXEL});
-	drawRays(&data->play, &data->map, &data->play.ray, &data->img);
+	drawRays(&data->play, &data->map, &data->play.ray);
 	//render_rect(&data->img, (t_rect){W_WIDTH - 100, W_HEIGHT - 100, 100, 100, GREEN_PIXEL});
 	//render_rect(&data->img, (t_rect){0, 0, 100, 100, RED_PIXEL});
 //	render_line(&data->img, (t_line){10, 10, 55, 100, ((10-100)/(10-55)), ((100*(10-55)-55*(10-100))/(10-55)), RED_PIXEL});
@@ -607,7 +494,30 @@ int	next_pos_is_wall(t_data *data, int sens)
 		next_x = (data->play.px - data->play.pdx) / data->map.mapS;
 		next_y = (data->play.py - data->play.pdy) / data->map.mapS;
 	}
+
+// 	if (sens == 1)
+// 	{
+// 		next_x = ((data->play.px + data->play.pdx) - (data->map.mapS / 16)) / data->map.mapS;
+// 		next_y = ((data->play.py + data->play.pdy) - (data->map.mapS / 16)) / data->map.mapS;
+// 		// if (data->play.pdx >= 0 && data->play.pdy >= 0)
+// 		// 	index = (next_y * data->map.mapX + next_x) - 1;
+// 		// if (data->play.pdx >= 0 && data->play.pdy < 0)
+// 		// 	index = next_y * data->map.mapX + next_x;	
+// 		// if (data->play.pdx < 0 && data->play.pdy >= 0)
+// 		// 	index = next_y * data->map.mapX + next_x;
+// 		// if (data->play.pdx < 0 && data->play.pdy < 0)
+// 		index = next_y * data->map.mapX + next_x;
+// printf(PURPLE"index = [%d] | pdx = [%f] | pdy = [%f]"RESET"\n", index, data->play.pdx, data->play.pdy);
+// 	}
+// 	else
+// 	{
+// 		next_x = ((data->play.px - data->play.pdx) + (data->map.mapS / 16)) / data->map.mapS;
+// 		next_y = ((data->play.py - data->play.pdy) + (data->map.mapS / 16)) / data->map.mapS;
+// 		index = (next_y * data->map.mapX + next_x);
+// printf(YELLOW"index = [%d]"RESET"\n", index);
+// 	}
 	index = next_y * data->map.mapX + next_x;
+printf(GREEN"index = [%d] | map = [%d]"RESET"\n", index, mapext[index]);
 	if (mapext[index] == 1)
 		return (1);
 	else
@@ -616,21 +526,28 @@ int	next_pos_is_wall(t_data *data, int sens)
 
 int	deal_key(int key, t_data *data)
 {
-//	if (key == 119 && !next_pos_is_wall(data, 1))
-	if (key == 115 && !next_pos_is_wall(data, 1))
+//	if (key == 119 && (data->play.py - 5) >= 0 && !next_pos_is_wall(data, data->play.px, data->play.py - 5 - data->map.mapS / 4))// && mapext[data->play.py - 1] != 1) // w mapext[y * map.mapX + x]
+	// if (key == 119 && !next_pos_is_wall(data, ((data->play.px + data->play.pdx) - data->map.mapS / 16), ((data->play.py + data->play.pdy) - data->map.mapS / 16)))
+	if (key == 119 && !next_pos_is_wall(data, 1))//, ((data->play.px + data->play.pdx) - data->map.mapS / 16), ((data->play.py + data->play.pdy) - data->map.mapS / 16)))
 	{
-printf("S\n");
+printf("W | next = [%d]\n", next_pos_is_wall(data, 1));
+//		data->play.py -= 5;
+printf(RED"pa = %f | px = %d | pdx = %f | py = %d | pdy = %f"RESET"\n", data->play.pa, data->play.px, data->play.pdx, data->play.py, data->play.pdy);
 		data->play.px += data->play.pdx;
 		data->play.py += data->play.pdy;
+printf(RED"pa = %f | px = %d | pdx = %f | py = %d | pdy = %f"RESET"\n", data->play.pa, data->play.px, data->play.pdx, data->play.py, data->play.pdy);
 	}
-//	if (key == 115 && !next_pos_is_wall(data, 0))
-	if (key == 119 && !next_pos_is_wall(data, 0))
+//	if (key == 115 && (data->play.py + 5) < data->map.len_mapYS && !next_pos_is_wall(data, data->play.px, data->play.py + 5)) // s
+//	if (key == 115 && !next_pos_is_wall(data, ((data->play.px - data->play.pdx) + data->map.mapS / 16), ((data->play.py - data->play.pdy) + data->map.mapS / 16))) // s
+	if (key == 115 && !next_pos_is_wall(data, 0))//((data->play.px - data->play.pdx) + data->map.mapS / 16), ((data->play.py - data->play.pdy) + data->map.mapS / 16))) // s
 	{
-printf("W\n");
+printf("S\n");
+//		data->play.py += 5;
 		data->play.px -= data->play.pdx;
 		data->play.py -= data->play.pdy;
 	}
-	if (key == 97)
+//	if (key == 97 && (data->play.px - 5) >= 0 && !next_pos_is_wall(data, data->play.px - 5 - data->map.mapS / 4, data->play.py)) // a
+	if (key == 97)// && !next_pos_is_wall(data, data->play.px - 5 - data->map.mapS / 4, data->play.py)) // a
 	{
 printf("A\n");
 		data->play.pa -= 0.1;
@@ -639,6 +556,7 @@ printf("A\n");
 		data->play.pdx = cos(data->play.pa) * 5;
 		data->play.pdy = sin(data->play.pa) * 5;	
 	}
+//	if (key == 100)// && (data->play.px + 5) < data->map.len_mapXS && !next_pos_is_wall(data, data->play.px + 5 + data->map.mapS / 4, data->play.py)) // d
 	if (key == 100)
 	{
 printf("D\n");
@@ -671,11 +589,9 @@ int	main(void)
 	data.play.width = 5; // A retirer plus tard
 	data.play.height = 5; // A retirer plus tard
 	data.play.color = 0x00FF0000;
-	data.play.pa = M_PI / 2;
+	data.play.pa = M_PI / 2; // ATTENTION : dans notre affichage, ça fait face au sud et non au nord !!!
 	data.play.pdx = cos(data.play.pa);// * 5;
 	data.play.pdy = sin(data.play.pa);// * 5;
-	data.play.dist_H = 1000000;
-	data.play.dist_V = 1000000;
 
 	data.map.mapX = 8;
 	data.map.mapY = 8;
@@ -700,16 +616,14 @@ int	main(void)
 		return (1);
 	//data.win_ptr = mlx_new_window(data.mlx_ptr, W_WIDTH, W_HEIGHT, "Cub3D_test");
 //	data.win_ptr = mlx_new_window(data.mlx_ptr, data.map.mapX * 64, data.map.mapY * 64, "Cub3D_test");
-//	data.win_ptr = mlx_new_window(data.mlx_ptr, data.map.len_mapXS, data.map.len_mapYS, "Cub3D_test");
-	data.win_ptr = mlx_new_window(data.mlx_ptr, W_WIDTH, W_HEIGHT, "Cub3D_test");
+	data.win_ptr = mlx_new_window(data.mlx_ptr, data.map.len_mapXS, data.map.len_mapYS, "Cub3D_test");
 	if (data.win_ptr == NULL)
 	{
 		free(data.win_ptr);
 		return (1);
 	}
 
-//	data.img.mlx_img = mlx_new_image(data.mlx_ptr, data.map.len_mapXS, data.map.len_mapYS);
-	data.img.mlx_img = mlx_new_image(data.mlx_ptr, W_WIDTH, W_HEIGHT);
+	data.img.mlx_img = mlx_new_image(data.mlx_ptr, data.map.len_mapXS, data.map.len_mapYS);
 	data.img.addr = mlx_get_data_addr(data.img.mlx_img, &data.img.bpp, &data.img.line_len, &data.img.endian);
 //	mlx_put_image_to_window(data.mlx_ptr, data.win_ptr, data.mlx_img, 0, 0);
 
@@ -734,5 +648,5 @@ lorsque le bouton est relaché ! mlx_hook : la fct s'active lorsque le bouton es
 	return (0);
 }
 
-// video 11'35 tracer le plus petit des rayons (hit Vertical ou hit Horizontal)
+
 // https://aurelienbrabant.fr/blog/pixel-drawing-with-the-minilibx
