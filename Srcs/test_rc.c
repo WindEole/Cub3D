@@ -4,17 +4,32 @@
 # define W_WIDTH 1010//512
 # define W_HEIGHT 512
 
-# define GREEN_PIXEL 0xFF00
-# define RED_PIXEL 0x00FF0000
-# define BLUE_PIXEL 0xFF
+# define GREEN_PIXEL 0x33FF66
+# define RED_PIXEL 0xCC0033
+# define BLUE_PIXEL 0x0033CC
+# define YELLOW_PIXEL 0xFFFF66
+# define PINK_PIXEL 0xFF33FF
+# define ORANGE_PIXEL 0xFF6633
+
 # define WHITE_PIXEL 0xFFFFFF
 # define GRAY_PIXEL 0x808080
 # define BLACK_PIXEL 0x000000
-# define YELLOW_PIXEL 0xFFFF00
 
 # define CEILING 0xFFFF
 # define FLOOR 0xFF7F50
 
+
+// typedef union u_mlx_color
+// {
+// 	struct
+// 	{
+// 		uint8_t	b;
+// 		uint8_t	g;
+// 		uint8_t	r;
+// 		uint8_t	a;
+// 	};
+// 	uint32_t	argb;
+// }	t_mlx_color;
 
 typedef struct s_img
 {
@@ -37,6 +52,7 @@ typedef struct s_rays
 	float	ra;
 	float	xo;
 	float	yo;
+	int 	ray_color;
 }	t_rays;
 
 typedef struct s_play
@@ -289,8 +305,12 @@ void	draw_3D(t_play *play, t_map *map, t_img *img, int r)
 	while (i < lineH + line_origin)
 	{
 		j = r * 8 + 530;
+
 		while (j < (r * 8 + 530) + 8)
-			my_pixel_put(img, j++, i, BLUE_PIXEL);
+		{
+// printf(BLUE"j = %d"RESET"\n", j);			
+			my_pixel_put(img, j++, i, play->ray.ray_color);
+		}
 		++i;
 	}
 }
@@ -347,110 +367,126 @@ void	drawRays(t_play *play, t_map *map, t_rays *ray, t_img *img)
 	play->dist_V = 1000000;
 	play->dvx = play->px;
 	play->dvy = play->py;
+printf(ORANGE"//-----------------------------------------------------------------------//"RESET"\n");
+printf(BLUE"ray->ra = %f"RESET"\n", ray->ra);
 	r = 0;
 	while (r < 60) 
 	{
 //--- Check horizontal lines --- video 9'18//
 		dof = 0;
 		aTan = -1 / tan(ray->ra);
-		if (ray->ra < M_PI) //-- player is looking up 
-		{
-//printf(RED"ra = [%f] | player is looking up !"RESET"\n", ray->ra);
-			if (((((int)(play->py) >> 6) << 6) - 0.0001) < W_HEIGHT)
-				ray->ry = (((int)(play->py) >> 6) << 6) - 0.0001;
-			if (((play->py - ray->ry) * aTan + play->px) < W_WIDTH)
-				ray->rx = (play->py - ray->ry) * aTan + play->px;
-			ray->yo = -64;
-			ray->xo = -ray->yo * aTan;
-		}
-		if (ray->ra > M_PI) //-- player is looking down
-		{
-//printf(GREEN"ra = [%f] | player is looking down!"RESET"\n", ray->ra);
-			if (((((int)(play->py) >> 6) << 6) + 64) < W_HEIGHT)
-				ray->ry = (((int)(play->py) >> 6) << 6) + 64;
-			if (((play->py - ray->ry) * aTan + play->px) < W_WIDTH)
-				ray->rx = (play->py - ray->ry) * aTan + play->px;
-			ray->yo = 64;
-			ray->xo = -ray->yo * aTan;
-		}
-		if (ray->ra == 0 || ray->ra == M_PI) //-- player is looking left or right
+		if (ray->ra == 0 || ray->ra == M_PI || ray->ra == 2 * M_PI) //-- player is looking left or right
 		{
 //printf(YELLOW"ra = [%f] | player is looking left or right !"RESET"\n", ray->ra);
 			ray->ry = play->py;
 			ray->rx = play->px;
 			dof = 8;
 		}
+		else if (ray->ra < M_PI) //-- player is looking up 
+		{
+//printf(RED"ra = [%f] | player is looking up !"RESET"\n", ray->ra);
+			if (((((int)(play->py) >> 6) << 6) - 0.0001) < map->len_mapYS && ((((int)(play->py) >> 6) << 6) - 0.0001) > 0)
+				ray->ry = (((int)(play->py) >> 6) << 6) - 0.0001;
+			if (((play->py - ray->ry) * aTan + play->px) < map->len_mapXS && ((play->py - ray->ry) * aTan + play->px) > 0)
+				ray->rx = (play->py - ray->ry) * aTan + play->px;
+			ray->yo = -64;
+			ray->xo = -ray->yo * aTan;
+printf(RED"look up : ray->rx = %f | ray->ry = %f"RESET"\n", ray->rx, ray->ry);
+		}
+		else if (ray->ra > M_PI) //-- player is looking down
+		{
+//printf(GREEN"ra = [%f] | player is looking down!"RESET"\n", ray->ra);
+			if (((((int)(play->py) >> 6) << 6) + 64) < map->len_mapYS && ((((int)(play->py) >> 6) << 6) + 64) > 0)
+				ray->ry = (((int)(play->py) >> 6) << 6) + 64;
+			if (((play->py - ray->ry) * aTan + play->px) < map->len_mapXS && ((play->py - ray->ry) * aTan + play->px) > 0)
+				ray->rx = (play->py - ray->ry) * aTan + play->px;
+			ray->yo = 64;
+			ray->xo = -ray->yo * aTan;
+printf(GREEN"look down : ray->rx = %f | ray->ry = %f"RESET"\n", ray->rx, ray->ry);
+		}
 		while (dof < 8)
 		{
-			ray->mx = (int)(ray->rx)>>6;
-			ray->my = (int)(ray->ry)>>6;
+			if (ray->rx > 0)
+				if (ray->rx < map->len_mapXS)
+					ray->mx = (int)(ray->rx)>>6;
+			if (ray->ry > 0)
+				if (ray->ry < map->len_mapYS)
+					ray->my = (int)(ray->ry)>>6;
 			ray->mp = ray->my * map->mapX + ray->mx;
 			if (ray->mp > 0 && ray->mp < map->mapS && mapext[ray->mp] == 1) // ray hit wall !
 			{
 				play->dhx = ray->rx;
 				play->dhy = ray->ry;
 				play->dist_H = calcul_dist(play->px, play->py, play->dhx, play->dhy);
+//printf(GREEN"rx = %f | ry = %f | distH = %f"RESET"\n", ray->rx, ray->ry, play->dist_H);
 				dof = 8;
 			}
 			else // make ray go to next wall !
 			{
-				if (ray->rx < W_WIDTH && (ray->rx + ray->xo) < W_WIDTH)
+//printf(ORANGE"ra = %f | rx = %f | mx = %d | ry = %f | my = %d | ray->mp = [%d]"RESET"\n", ray->ra, ray->rx, ray->mx, ray->ry, ray->my, ray->mp);
+				if (ray->rx < map->len_mapXS && (ray->rx + ray->xo) < map->len_mapXS && ray->rx > 0)
 					ray->rx += ray->xo;
-				if (ray->ry < W_HEIGHT && (ray->ry + ray->yo) < W_HEIGHT)				
+				if (ray->ry < map->len_mapYS && (ray->ry + ray->yo) < map->len_mapYS && ray->ry > 0)				
 					ray->ry += ray->yo;
 				dof += 1;
 			}
 		}
 // //---dessinons les rayons horizontaux ! ---//
-// 		unsigned int i, j;
-// 		i = play->ray.ry + play->height;//play.ray.ry; // On affiche le point de contact du rayon avec l'horizontale
-// 	printf(YELLOW"i = %d"RESET"\n", i);
-// 		while (i > play->ray.ry && i < W_HEIGHT)// < play.ray.ry + play.height)
+// 		int a, b;
+// 		a = play->ray.ry + play->height;//play.ray.ry; // On affiche le point de contact du rayon avec l'horizontale
+// //	printf(YELLOW"a = %d"RESET"\n", a);
+// 		while (a > play->ray.ry && a < map->len_mapYS)// < play.ray.ry + play.height)
 // 		{
-// 			j = play->ray.rx;
-// 	printf(ORANGE"j = %d"RESET"\n", j);
-// 			while (j < play->ray.rx + play->width && j < W_WIDTH)
+// 			b = play->ray.rx;
+// //	printf(ORANGE"b = %d"RESET"\n", b);
+// 			while (b < play->ray.rx + play->width && b < map->len_mapXS)
 // 			{
-// 	printf(BLUE"i = %d | j = %d"RESET"\n", i, j);
-// 				my_pixel_put(img, j++, i, BLUE_PIXEL);
+// //	printf(BLUE"a = %d | b = %d"RESET"\n", a, b);
+// 				my_pixel_put(img, b++, a, BLACK_PIXEL);
 // 			}
-// 			--i;
+// 			--a;
 // 		}
 // 		r++;
 // --- Check vertical lines --- video 10'25// P2 = PI/2 | P3 = 3 * PI/2
 		dof = 0;
 		nTan = -tan(ray->ra);
-		if (ray->ra < (M_PI / 2) || ray->ra > (3 * M_PI / 2)) //-- player is looking right
-		{
-//printf(PURPLE"ra = [%f] | player is looking left !"RESET"\n", ray->ra);
-			if (((((int)(play->px) >> 6) << 6) - 0.0001) < W_HEIGHT)
-				ray->rx = (((int)(play->px) >> 6) << 6) - 0.0001;
-			if (((play->px - ray->rx) * nTan + play->py) < W_WIDTH)
-				ray->ry = (play->px - ray->rx) * nTan + play->py;
-			ray->xo = -64;
-			ray->yo = -ray->xo * nTan;
-		}
-		if (ray->ra > (M_PI / 2) && ray->ra < (3 * M_PI / 2)) //-- player is looking left
-		{
-//printf(CYAN"ra = [%f] | player is looking right!"RESET"\n", ray->ra);
-			if (((((int)(play->px) >> 6) << 6) + 64) < W_HEIGHT)
-				ray->rx = (((int)(play->px) >> 6) << 6) + 64;
-			if (((play->px - ray->rx) * nTan + play->py) < W_WIDTH)
-				ray->ry = (play->px - ray->rx) * nTan + play->py;
-			ray->xo = 64;
-			ray->yo = -ray->xo * nTan;
-		}
-		if (ray->ra == 0 || ray->ra == M_PI) //-- player is looking up or down
+		if (ray->ra == 0 || ray->ra == M_PI || ray->ra == 2 * M_PI) //-- player is looking up or down
 		{
 //printf(ORANGE"ra = [%f] | player is looking up or down !"RESET"\n", ray->ra);
 			ray->ry = play->py;
 			ray->rx = play->px;
 			dof = 8;
 		}
+		else if (ray->ra < (M_PI / 2) || ray->ra > (3 * M_PI / 2)) //-- player is looking right
+		{
+//printf(PURPLE"ra = [%f] | player is looking left !"RESET"\n", ray->ra);
+			if (((((int)(play->px) >> 6) << 6) - 0.0001) < map->len_mapYS && ((((int)(play->px) >> 6) << 6) - 0.0001) > 0)
+				ray->rx = (((int)(play->px) >> 6) << 6) - 0.0001;
+			if (((play->px - ray->rx) * nTan + play->py) < map->len_mapXS && ((play->px - ray->rx) * nTan + play->py) > 0)
+				ray->ry = (play->px - ray->rx) * nTan + play->py;
+			ray->xo = -64;
+			ray->yo = -ray->xo * nTan;
+printf(PURPLE"look right : ray->rx = %f | ray->ry = %f"RESET"\n", ray->rx, ray->ry);
+		}
+		else if (ray->ra > (M_PI / 2) && ray->ra < (3 * M_PI / 2)) //-- player is looking left
+		{
+//printf(CYAN"look left : ray->rx = %f | play->px = %d | ray->ry = %f | play->py = %d"RESET"\n", ray->rx, play->px, ray->ry, play->py);
+			if (((((int)(play->px) >> 6) << 6) + 64) < map->len_mapYS && ((((int)(play->px) >> 6) << 6) + 64) > 0)
+				ray->rx = (((int)(play->px) >> 6) << 6) + 64;
+			if (((play->px - ray->rx) * nTan + play->py) < map->len_mapXS && ((play->px - ray->rx) * nTan + play->py) > 0)
+				ray->ry = (play->px - ray->rx) * nTan + play->py;
+			ray->xo = 64;
+			ray->yo = -ray->xo * nTan;
+printf(CYAN"look left : ray->rx = %f | play->px = %d | ray->ry = %f | play->py = %d"RESET"\n", ray->rx, play->px, ray->ry, play->py);
+		}
 		while (dof < 8)
 		{
-			ray->mx = (int)(ray->rx)>>6;
-			ray->my = (int)(ray->ry)>>6;
+			if (ray->rx > 0)
+				if (ray->rx < map->len_mapXS)
+					ray->mx = (int)(ray->rx)>>6;
+			if (ray->ry > 0)
+				if (ray->ry < map->len_mapYS)
+					ray->my = (int)(ray->ry)>>6;
 			ray->mp = ray->my * map->mapX + ray->mx;
 // printf(YELLOW"rx = %f | mx = %d | ry = %f | my = %d"RESET"\n", ray->rx, ray->mx, ray->ry, ray->my);
 // printf(ORANGE"ray->mp = [%d]"RESET"\n", ray->mp);
@@ -464,33 +500,58 @@ void	drawRays(t_play *play, t_map *map, t_rays *ray, t_img *img)
 			}
 			else // make ray go to next wall !
 			{
-				if (ray->rx < W_WIDTH && (ray->rx + ray->xo) < W_WIDTH)
+//printf(BLUE"ra = %f | rx = %f | mx = %d | ry = %f | my = %d | ray->mp = [%d]"RESET"\n", ray->ra, ray->rx, ray->mx, ray->ry, ray->my, ray->mp);
+				if (ray->rx < map->len_mapXS && (ray->rx + ray->xo) < map->len_mapXS && ray->rx > 0)
 					ray->rx += ray->xo;
-				if (ray->ry < W_HEIGHT && (ray->ry + ray->yo) < W_HEIGHT)				
+				if (ray->ry < map->len_mapYS && (ray->ry + ray->yo) < map->len_mapYS && ray->ry > 0)				
 					ray->ry += ray->yo;
 				dof += 1;
 			}
 		}
+// //---dessinons les rayons verticaux ! ---//
+// 		int c, d;
+// 		c = play->ray.ry + play->height;//play.ray.ry; // On affiche le point de contact du rayon avec l'horizontale
+// //	printf(YELLOW"c = %d"RESET"\n", c);
+// 		while (c > play->ray.ry && c < map->len_mapYS)// < play.ray.ry + play.height)
+// 		{
+// 			d = play->ray.rx;
+// //	printf(ORANGE"d = %d"RESET"\n", d);
+// 			while (d < play->ray.rx + play->width && d < map->len_mapXS)
+// 			{
+// //	printf(BLUE"c = %d | d = %d"RESET"\n", c, d);
+// 				my_pixel_put(img, d++, c, PINK_PIXEL);
+// 			}
+// 			--c;
+// 		}
+printf(YELLOW"difference V-H = %f | distV = %f | distH = %f | ra = %f"RESET"\n", play->dist_V - play->dist_H, play->dist_V, play->dist_H, ray->ra);
 		if (play->dist_V < play->dist_H)
 		{
 			ray->rx = play->dvx;
 			ray->ry = play->dvy;
 			play->dist_final = play->dist_V;
+			if (ray->ra <= M_PI / 2 || ray->ra > 2 * M_PI / 3)
+				ray->ray_color = BLUE_PIXEL;
+			if (ray->ra > M_PI / 2 && ray->ra <= 2 * M_PI / 3)
+				ray->ray_color = YELLOW_PIXEL;
 		}
-		if (play->dist_H < play->dist_V)
+		else if (play->dist_H < play->dist_V)
 		{
 			ray->rx = play->dhx;
 			ray->ry = play->dhy;
 			play->dist_final = play->dist_H;
+			if (ray->ra >= 0 && ray->ra < M_PI)
+				ray->ray_color = RED_PIXEL;
+			if (ray->ra >= M_PI && ray->ra < 2 * M_PI)
+				ray->ray_color = GREEN_PIXEL;
 		}
 	//---dessinons les rayons ---//
-		unsigned int i, j;
+		int i, j;
 		i = play->ray.ry; // On affiche le point de contact du rayon avec les murs
-		while (i < play->ray.ry + 3 && i < W_HEIGHT)
+		while (i < play->ray.ry + 3 && i < map->len_mapYS)
 		{
 			j = play->ray.rx;
-			while (j < play->ray.rx + 3 && j < W_WIDTH)
-				my_pixel_put(img, j++, i, BLUE_PIXEL);
+			while (j < play->ray.rx + 3 && j < map->len_mapXS)
+				my_pixel_put(img, j++, i, ray->ray_color);
 			++i;
 		}
 		draw_3D(play, map, img, r);
@@ -499,6 +560,7 @@ void	drawRays(t_play *play, t_map *map, t_rays *ray, t_img *img)
 			ray->ra += 2 * M_PI;
 		if (ray->ra > 2 * M_PI)
 			ray->ra -= 2 * M_PI;
+printf(ORANGE"//---------------------------------------------------------------------//"RESET"\n");
 		r++;
 	}
 }

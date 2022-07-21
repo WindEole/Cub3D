@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SO_LONG_H
-# define SO_LONG_H
+#ifndef CUB3D_H
+# define CUB3D_H
 
 # include <string.h>
 # include <ctype.h>
@@ -21,6 +21,7 @@
 # include <fcntl.h>
 # include <limits.h>
 # include <math.h>
+#include "X11/X.h"
 # include "../Libft/libft.h"
 # include "../minilibx-linux/mlx.h"
 
@@ -41,67 +42,109 @@
 # define ORANGE "\033[38;2;255;165;0m"
 # define RESET "\033[0m"
 
-typedef struct s_dll t_dll;
+# define W_WIDTH 2030//1010//512
+# define W_HEIGHT 900//512
 
-typedef struct s_adm
-{
-	t_dll	*head;
-	t_dll	*tail;
-	t_dll	*play;
-	void	*p[7];
-	int		y;
-	int		e;
-	int		op;
-	int		te;
-	int		col; // collectible !
-	void	*img; // ajout cub
-	char	*addr; // ajour cub
-	int		bpp; //bits_per_pixel
-	int		len; // line_length ATTENTION : != de la largeur de fenetre ! donc il faut calculer offset
-	int		endian;	
-	int		color; // ajout cub
-}	t_adm;
+# define GREEN_PIXEL 0x33FF66
+# define RED_PIXEL 0xCC0033
+# define BLUE_PIXEL 0x0033CC
+# define YELLOW_PIXEL 0xFFFF66
+# define PINK_PIXEL 0xFF33FF
+# define ORANGE_PIXEL 0xFF6633
 
-struct s_dll
+# define WHITE_PIXEL 0xFFFFFF
+# define GRAY_PIXEL 0x808080
+# define BLACK_PIXEL 0x000000
+
+# define CEILING 0xE699FFFF
+# define FLOOR 0xE6CCFFCC
+
+// typedef union u_mlx_color
+// {
+// 	struct
+// 	{
+// 		uint8_t	b;
+// 		uint8_t	g;
+// 		uint8_t	r;
+// 		uint8_t	a;
+// 	};
+// 	uint32_t	argb;
+// }	t_mlx_color;
+
+typedef struct s_img
 {
-	char	c;
-	int		x;
-	int		y;
-	t_dll	*r;
-	t_dll	*l;
+	void	*mlx_img;
+	char	*addr;
+	int		bpp; /* bits per pixel */
+	int		line_len;//amount of bytes taken by one row of our image. (ATTENTION : 1 pixel = 8 bytes!)
+	int		endian;//Endianness means that the bytes in computer memory are read in a certain order. 
+	int		ceil_color;
+	int		floor_color;
+}	t_img;
+
+typedef struct s_rays
+{
+	int		mx; // position x sur map de l'impact du rayon
+	int		my; // position y sur map de l'impact du rayon
+	int		mp; // numero du carré de la map de l'impact du rayon
+	float	rx; // coordonnée x de l'impact du rayon sur une intersection
+	float	ry; // coordonnée y de l'impact du rayon sur une intersection
+	float	ra; // angle du rayon
+	float	xo; // offset sur x
+	float	yo; // offset sur y
+	int 	ray_color;
+}	t_rays;
+
+typedef struct s_play
+{
+	int		px;
+	int		py;
+	double	pdx; // delta x pour la rotation du player
+	double	pdy; // delta y pour la rotation du player
+	double	pa; // angle of the player (N/S/E/W ?)
+	int		dof;
+	float	dist_H;
+	float	dhx;
+	float	dhy;
+	float	dist_V;
+	float	dvx;
+	float	dvy;
+	float	dist_final;
+	int		width; // A retirer plus tard
+	int		height; // A retirer plus tard
+	int		color;
+	t_rays	ray;
+}	t_play;
+
+typedef struct s_map
+{
+	int	mapX;
+	int	mapY;
+	int	mapS;
+	int	len_mapXS;
+	int	len_mapYS;
+//	int	map[8];
+}	t_map;
+
+typedef struct	s_data
+{
+	void	*mlx_ptr;
+	void	*win_ptr;
+	t_img	img;
+	t_play	play;
+	t_map	map;
+}	t_data;
+
+int	mapext[] =
+{
+1,1,1,1,1,1,1,1,
+1,0,1,0,0,0,0,1,
+1,0,1,0,0,0,0,1,
+1,0,1,0,0,0,0,1,
+1,0,0,0,0,0,0,1,
+1,0,0,0,0,1,0,1,
+1,0,0,0,0,0,0,1,
+1,1,1,1,1,1,1,1,
 };
 
-typedef struct s_plp
-{
-	int	px;
-	int	py;
-	int	tx;
-	int	ty;
-}	t_plp;
-
-// create_lst_map.c
-
-t_adm	**ft_create_map(t_adm **adm, int fd, int y);
-int		ft_count_nb(t_adm *adm);
-
-// graphical.c
-
-int		ft_graphical(t_adm **adm, int x, int y);
-
-// movement.c
-
-int		ft_close(t_adm **adm);
-int		ft_vert(t_adm **adm, void **p, int i);
-int		ft_hori(t_adm **adm, void **p, int i);
-
-// error_free.c
-
-int		ft_error(char *s, int ret);
-void	*ft_free_line(char *s, int ret, void *r);
-void	*ft_free_allist(t_adm **adm, int y, void *r);
-t_adm	*ft_free_adm_u(t_adm *adm);
-
-// all_display.c
-
-void	all_display(t_adm **adm, int y);
 #endif

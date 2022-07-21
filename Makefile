@@ -31,7 +31,7 @@ vpath %.c Srcs
 # 			Srcs/error_free.c \
 # 			Srcs/all_display.c \
 
-SRC		=	Srcs/test_rc.c \
+SRC		=	Srcs/raycasting.c \
 
 OBJ		=	$(SRC:Srcs/%.c=Objs/%.o)
 DEP		=	$(SRC:Srcs/%.c=Objs/%.d)
