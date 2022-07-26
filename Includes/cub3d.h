@@ -13,6 +13,8 @@
 #ifndef CUB3D_H
 # define CUB3D_H
 
+# define _USE_MATH_DEFINES
+
 # include <string.h>
 # include <ctype.h>
 # include <stdlib.h>
@@ -21,7 +23,7 @@
 # include <fcntl.h>
 # include <limits.h>
 # include <math.h>
-#include "X11/X.h"
+# include "X11/X.h"
 # include "../Libft/libft.h"
 # include "../minilibx-linux/mlx.h"
 
@@ -71,7 +73,7 @@
 // 	uint32_t	argb;
 // }	t_mlx_color;
 
-typedef struct s_img
+typedef struct s_ig
 {
 	void	*mlx_img;
 	char	*addr;
@@ -80,18 +82,18 @@ typedef struct s_img
 	int		endian;//Endianness means that the bytes in computer memory are read in a certain order. 
 	int		ceil_color;
 	int		floor_color;
-}	t_img;
+}	t_ig;
 
 typedef struct s_rays
 {
 	int		mx; // position x sur map de l'impact du rayon
 	int		my; // position y sur map de l'impact du rayon
 	int		mp; // numero du carré de la map de l'impact du rayon
-	float	rx; // coordonnée x de l'impact du rayon sur une intersection
-	float	ry; // coordonnée y de l'impact du rayon sur une intersection
-	float	ra; // angle du rayon
-	float	xo; // offset sur x
-	float	yo; // offset sur y
+	double	rx; // coordonnée x de l'impact du rayon sur une intersection
+	double	ry; // coordonnée y de l'impact du rayon sur une intersection
+	double	ra; // angle du rayon
+	double	xo; // offset sur x
+	double	yo; // offset sur y
 	int 	ray_color;
 }	t_rays;
 
@@ -103,13 +105,14 @@ typedef struct s_play
 	double	pdy; // delta y pour la rotation du player
 	double	pa; // angle of the player (N/S/E/W ?)
 	int		dof;
-	float	dist_H;
-	float	dhx;
-	float	dhy;
-	float	dist_V;
-	float	dvx;
-	float	dvy;
-	float	dist_final;
+	int		end_dof;
+	double	dist_H;
+	double	dhx;
+	double	dhy;
+	double	dist_V;
+	double	dvx;
+	double	dvy;
+	double	dist_final;
 	int		width; // A retirer plus tard
 	int		height; // A retirer plus tard
 	int		color;
@@ -120,6 +123,8 @@ typedef struct s_map
 {
 	int	mapX;
 	int	mapY;
+	int	cube_aire;
+	int	aire_shift;
 	int	mapS;
 	int	len_mapXS;
 	int	len_mapYS;
@@ -130,21 +135,22 @@ typedef struct	s_data
 {
 	void	*mlx_ptr;
 	void	*win_ptr;
-	t_img	img;
+	t_ig	minimap;
+	t_ig	rendu;
 	t_play	play;
 	t_map	map;
 }	t_data;
 
 int	mapext[] =
 {
-1,1,1,1,1,1,1,1,
-1,0,1,0,0,0,0,1,
-1,0,1,0,0,0,0,1,
-1,0,1,0,0,0,0,1,
-1,0,0,0,0,0,0,1,
-1,0,0,0,0,1,0,1,
-1,0,0,0,0,0,0,1,
-1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
 };
 
 #endif

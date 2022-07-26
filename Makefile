@@ -17,7 +17,7 @@ INC		=	Includes
 CC		=	clang
 FLAGS	=	-Wall -Wextra -Werror -I $(INC)
 CDEP	=	-MMD
-CFA		=	-fsanitize=address -g3
+CFA		=	-g3 -fsanitize=address
 RM		=	/usr/bin/rm -rf
 
 LIB		=	-L./Libft -lft -L./minilibx-linux -lmlx -lXext -lX11 -lm
