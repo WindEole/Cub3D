@@ -6,7 +6,7 @@
 /*   By: iderighe <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/06 14:06:07 by iderighe          #+#    #+#             */
-/*   Updated: 2021/12/08 11:05:46 by iderighe         ###   ########.fr       */
+/*   Updated: 2022/09/03 15:02:46 by acoinus          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@
 # include <stdio.h>
 # include <unistd.h>
 
-# define BUFFER_SIZE 8
+# define BUFFER_SIZE 1024
 
 typedef struct s_list
 {
@@ -41,8 +41,8 @@ int					ft_isascii(int c);
 int					ft_isdigit(int c);
 int					ft_isprint(int c);
 char				*ft_itoa(int n);
-void				ft_lstadd_back(t_list **alst, t_list *new);
-void				ft_lstadd_front(t_list **alst, t_list *new);
+void				ft_lstadd_back(t_list **alst, t_list *now);
+void				ft_lstadd_front(t_list **alst, t_list *now);
 void				ft_lstclear(t_list **lst, void (*del)(void *));
 void				ft_lstdelone(t_list *lst, void (*del)(void *));
 void				ft_lstiter(t_list *lst, void (*f)(void*));
@@ -78,7 +78,7 @@ int					ft_str_is_numeric(char *str);
 int					ft_str_is_printable(char *str);
 int					ft_str_is_uppercase(char *str);
 char				*ft_strcat(char *dest, char *src);
-char				*ft_strchr(const char *s, int c);
+char				*ft_strchr(char c, char *set);
 int					ft_strcmp(char *s1, char *s2);
 char				*ft_strcpy(char *dest, char *src);
 char				*ft_strdup(const char *s1);
@@ -104,7 +104,7 @@ int					ft_toupper(int c);
 
 // get_next_line
 
-int					get_next_line(int fd, char **line);
+int					get_next_line(int fd, char **line, int x, int r);
 char				*ft_strjoin_gnl(char *s1, char *s2);
 int					ft_strn(char *s);
 

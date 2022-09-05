@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   get_next_line.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: iderighe <iderighe@42.fr>                  +#+  +:+       +#+        */
+/*   By: acoinus <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2021/02/06 13:31:32 by iderighe          #+#    #+#             */
-/*   Updated: 2021/12/02 10:04:19 by iderighe         ###   ########.fr       */
+/*   Created: 2022/07/19 11:57:06 by acoinus           #+#    #+#             */
+/*   Updated: 2022/09/03 15:16:19 by acoinus          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,7 @@ static char	*ft_strcut(char *str)
 	return (cut_to_n);
 }
 
-static char	*ft_saver(char *str)
+static char	*ft_saver(char *str, int x)
 {
 	int	i;
 	int	j;
@@ -57,7 +57,7 @@ static char	*ft_saver(char *str)
 	if (!str)
 		return (NULL);
 	i = ft_strn(str);
-	if (!str[i])
+	if (x || !str[i])
 	{
 		free(str);
 		return (NULL);
@@ -75,37 +75,35 @@ static char	*ft_saver(char *str)
 	return (str);
 }
 
-static void	yenamarre(char **line, int fd, char **str)
+static void	gnl_suite(char **line, char **str, int x)
 {
-	*line = ft_strcut(str[fd]);
-	str[fd] = ft_saver(str[fd]);
+	*line = ft_strcut(*str);
+	*str = ft_saver(*str, x);
 	return ;
 }
 
-int	get_next_line(int fd, char **line)
+int	get_next_line(int fd, char **line, int x, int r)
 {
-	static char	*str[1024];
-	int			r;
+	static char	*str;
 	char		buf[BUFFER_SIZE + 1];
 	char		*tmp;
 
 	if (fd < 0 || BUFFER_SIZE <= 0 || !line || read(fd, buf, 0) < 0)
 		return (-1);
-	r = 1;
-	if (ft_check_n(str[fd]) == 0)
+	if (ft_check_n(str) == 0)
 		r = read(fd, buf, BUFFER_SIZE);
-	while (ft_check_n(str[fd]) == 0 && r != 0)
+	while (ft_check_n(str) == 0 && r != 0)
 	{
 		if (r == -1)
 			return (-1);
 		buf[r] = '\0';
-		tmp = str[fd];
-		str[fd] = ft_strjoin_gnl(tmp, buf);
+		tmp = str;
+		str = ft_strjoin_gnl(tmp, buf);
 		free(tmp);
-		if (ft_check_n(str[fd]) == 0)
+		if (ft_check_n(str) == 0)
 			r = read(fd, buf, BUFFER_SIZE);
 	}
-	yenamarre(line, fd, str);
+	gnl_suite(line, &str, x);
 	if (r == 0)
 		return (0);
 	return (1);

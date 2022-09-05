@@ -1,20 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   so_long.h                                          :+:      :+:    :+:   */
+/*   cub3d.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: iderighe <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2021/11/26 12:12:58 by iderighe          #+#    #+#             */
-/*   Updated: 2021/12/13 11:00:08 by iderighe         ###   ########.fr       */
+/*   Created: 2022/08/18 18:14:16 by iderighe          #+#    #+#             */
+/*   Updated: 2022/09/03 16:25:31 by acoinus          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CUB3D_H
 # define CUB3D_H
 
+# undef __STRICT_ANSI__ // Pour que VsCode reconnaisse M_PI !!
 # define _USE_MATH_DEFINES
 
+# include <math.h>
 # include <string.h>
 # include <ctype.h>
 # include <stdlib.h>
@@ -22,17 +24,10 @@
 # include <unistd.h>
 # include <fcntl.h>
 # include <limits.h>
-# include <math.h>
 # include "X11/X.h"
 # include "../Libft/libft.h"
 # include "../minilibx-linux/mlx.h"
-
-# define EXIT_SUCCESS 0
-# define EXIT_FAILURE 1
-# define TRUE 1
-# define FALSE 0
-# define DEF 64
-//# define BUFFER_SIZE 8
+# include "../minilibx-linux/mlx_int.h"
 
 # define RED "\033[1;31m"
 # define GREEN "\033[1;32m"
@@ -44,8 +39,8 @@
 # define ORANGE "\033[38;2;255;165;0m"
 # define RESET "\033[0m"
 
-# define W_WIDTH 2030//1010//512
-# define W_HEIGHT 900//512
+# define W_WIDTH 1219//1381//1544//1625//1706//
+# define W_HEIGHT 914//1036//1158//1219//1280//
 
 # define GREEN_PIXEL 0x33FF66
 # define RED_PIXEL 0xCC0033
@@ -58,99 +53,187 @@
 # define GRAY_PIXEL 0x808080
 # define BLACK_PIXEL 0x000000
 
-# define CEILING 0xE699FFFF
-# define FLOOR 0xE6CCFFCC
+# define CUBE_SIDE 64
+# define SPEED 1.5
+# define FOV 60
 
-// typedef union u_mlx_color
-// {
-// 	struct
-// 	{
-// 		uint8_t	b;
-// 		uint8_t	g;
-// 		uint8_t	r;
-// 		uint8_t	a;
-// 	};
-// 	uint32_t	argb;
-// }	t_mlx_color;
-
-typedef struct s_ig
-{
-	void	*mlx_img;
-	char	*addr;
-	int		bpp; /* bits per pixel */
-	int		line_len;//amount of bytes taken by one row of our image. (ATTENTION : 1 pixel = 8 bytes!)
-	int		endian;//Endianness means that the bytes in computer memory are read in a certain order. 
-	int		ceil_color;
-	int		floor_color;
-}	t_ig;
+/*-------------------------   structures   -----------------------------------*/
 
 typedef struct s_rays
 {
-	int		mx; // position x sur map de l'impact du rayon
-	int		my; // position y sur map de l'impact du rayon
-	int		mp; // numero du carré de la map de l'impact du rayon
-	double	rx; // coordonnée x de l'impact du rayon sur une intersection
-	double	ry; // coordonnée y de l'impact du rayon sur une intersection
-	double	ra; // angle du rayon
-	double	xo; // offset sur x
-	double	yo; // offset sur y
-	int 	ray_color;
+	int		mx;
+	int		my;
+	int		mp;
+	double	rx;
+	double	ry;
+	double	ra;
+	double	xo;
+	double	yo;
 }	t_rays;
 
 typedef struct s_play
 {
 	int		px;
 	int		py;
-	double	pdx; // delta x pour la rotation du player
-	double	pdy; // delta y pour la rotation du player
-	double	pa; // angle of the player (N/S/E/W ?)
+	int		pos_init;
+	double	pdx;
+	double	pdy;
+	double	pa;
 	int		dof;
 	int		end_dof;
-	double	dist_H;
+	double	dist_h;
 	double	dhx;
 	double	dhy;
-	double	dist_V;
+	double	dist_v;
 	double	dvx;
 	double	dvy;
 	double	dist_final;
-	int		width; // A retirer plus tard
-	int		height; // A retirer plus tard
-	int		color;
+	int		width;
+	int		height;
+	char	texture;
 	t_rays	ray;
 }	t_play;
 
+typedef struct s_keys
+{
+	int		w;
+	int		a;
+	int		s;
+	int		d;
+	int		r;
+	int		l;
+}	t_keys;
+
 typedef struct s_map
 {
-	int	mapX;
-	int	mapY;
-	int	cube_aire;
-	int	aire_shift;
-	int	mapS;
-	int	len_mapXS;
-	int	len_mapYS;
-//	int	map[8];
+	int		x;
+	int		y;
+	int		xy;
+	int		len_x;
+	int		len_y;
 }	t_map;
 
-typedef struct	s_data
+typedef struct s_tex
+{
+	char	*f;
+	char	*c;
+	t_img	*ea;
+	t_img	*we;
+	t_img	*so;
+	t_img	*no;
+	t_img	*fl;
+	t_img	*ce;
+	float	ty;
+	float	tx;
+	float	ty_off;
+}	t_tex;
+
+typedef struct s_data
 {
 	void	*mlx_ptr;
 	void	*win_ptr;
-	t_ig	minimap;
-	t_ig	rendu;
+	int		fd;
+	int		*mapext;
+	float	scale;
+	int		tex_switch;
+	char	*txtr[5];
+	int		tx[4];
+	int		f;
+	int		c;
+	char	*s_cub;
+	t_img	*rendu;
 	t_play	play;
+	t_keys	key;
 	t_map	map;
+	t_tex	tex;
 }	t_data;
 
-int	mapext[] =
-{
-1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-};
+/*-----------------------   prototypes parsing   -----------------------------*/
+
+//--- p1_main.c ---//
+
+int		ft_free(t_data *data, int ret);//, int niv);
+
+//--- p2_pars.c ---//
+
+int		valid_tex_path(t_data *data, char *s, int i);
+int		set_texture(char *s, char c, t_data *data);
+int		pars(t_data *data);
+
+//--- p3_elmt_checker.c ---//
+
+int		elmt_checker(int i, char *line, t_data *data, int x);
+
+//--- p4_map_checker.c ---//
+
+int		map_checker(char *s, t_data *data, int x);
+
+//--- p5_wall_checker.c ---//
+
+int		p_checker(t_data *data, int i);
+
+//--- p6_utils.c ---//
+
+char	*ft_strdup_n(const char *s, int n);
+int		ft_strlen_i(int *str);
+int		ft_isdigit_cub(char *s);
+int		ft_error(int err, int fd);
+
+//--- p7_strjoin_map.c ---//
+
+int		ft_strjoin_map(t_data *data, char *s2, int i, int j);
+
+/*-----------------------   prototypes graphical   ---------------------------*/
+
+//--- g1_graphical.c ---//
+
+void	my_pixel_put(t_img *img, int x, int y, int color);
+int		ft_close(t_data *data);
+int		graphical(t_data *data);
+
+//--- g2_init.c ---//
+
+int		init_texture(t_data *data, int s);
+void	init_data(t_data *data);
+
+//--- g3_movekey.c ---//
+
+void	deal_key(t_data *data);
+int		button_released(int key, t_data *data);
+int		button_pressed(int key, t_data *data);
+
+//--- g4_movement.c ---//
+
+void	move_right(t_data *data);
+void	move_left(t_data *data);
+void	move_forward(t_data *data);
+void	move_backward(t_data *data);
+
+//--- g5_raycasting1.c ---//
+
+void	raycasting(t_play *play, t_rays *ray, t_data *data);
+
+//--- g5_raycasting2.c ---//
+
+void	define_dist_final(t_play *play, t_rays *ray);
+void	define_dist(t_play *play, t_rays *ray, t_data *data, int hv);
+
+//--- g6_game1.c ---//
+
+int		define_color(char t, t_tex *tex);
+void	draw_3d(t_play *play, t_img *img, int r, t_data *data);
+void	render_background(t_img *rendu, int c, int f);
+
+//--- g6_game2.c ---//
+
+int		find(float x, float y, t_img *tex);
+int		shading(int c, t_data *data, int end_line, float pow);
+void	draw_floor_ceiling(t_data *data, t_img *img, int line_end, int r);
+
+//--- g7_minimap.c ---//
+
+void	draw_ray_0(t_data *data, double a, double dist, int color);
+int		render_player(t_img *img, t_play play, t_data *data);
+int		render_map(t_map map, t_data *data);
 
 #endif

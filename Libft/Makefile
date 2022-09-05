@@ -13,13 +13,15 @@
 NAME	=	libft.a
 
 SRCS	=	ft_strlen.c \
+			ft_strchr.c \
 			ft_putstr_fd.c \
 			ft_putnbr_fd.c \
 			get_next_line.c \
 			get_next_line_utils.c \
+			ft_atoi.c \
+			ft_strdup.c \
 
-SRCS_B	=	ft_atoi.c \
-			ft_atoi_base.c \
+SRCS_B	=	ft_atoi_base.c \
 			ft_bzero.c \
 			ft_calloc.c \
 			ft_div_mod.c \
@@ -54,10 +56,8 @@ SRCS_B	=	ft_atoi.c \
 			ft_str_is_printable.c \
 			ft_str_is_uppercase.c \
 			ft_strcat.c \
-			ft_strchr.c \
 			ft_strcmp.c \
 			ft_strcpy.c \
-			ft_strdup.c \
 			ft_strjoin.c \
 			ft_strlcat.c \
 			ft_strlcpy.c \
